@@ -79,6 +79,25 @@ define pThreadList
   end
 end
 
+#
+# boot_image_spaces_ is a std::vector data structure
+#
+define pBootImageSpaces
+  set $boot_image_spaces = &'art::Runtime::instance_'->heap_->boot_image_spaces_
+  #printf "&boot_image_spaces_ = %x\n", $boot_image_spaces
+
+  set $begin = *(unsigned int *)$boot_image_spaces
+  #printf "begin = %x\n", $begin
+
+  set $end = *(unsigned int *)((unsigned int)$boot_image_spaces + 4)
+  #printf "end = %x\n", $end
+
+  while $begin < $end
+    set $space = *(unsigned int *)$begin
+    p /x *('art::gc::space::ImageSpace' *)$space
+    set $begin = *(unsigned int *)$begin + 4
+  end
+end
 
 define pRegionSpace
   #set $num_regions_ = 'art::Runtime::instance_'->heap_->concurrent_copying_collector_->region_space_->num_regions_
