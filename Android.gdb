@@ -1,7 +1,50 @@
+#   This gdb script is Android-customized based on
+#   http://www.yolinux.com/TUTORIALS/src/dbinit_stl_views-1.03.txt.
+#   Contact: younghuster@163.com
+#
+#   STL GDB evaluators/views/utilities - 1.03
+#
+#   The new GDB commands:
+#           are entirely non instrumental
+#           do not depend on any "inline"(s) - e.g. size(), [], etc
+#       are extremely tolerant to debugger settings
+#
+#   This file should be "included" in .gdbinit as following:
+#   source stl-views.gdb or just paste it into your .gdbinit file
+#
+#   The following STL containers are currently supported:
+#
+#       std::vector<T> -- via pvector command
+#       std::list<T> -- via plist or plist_member command
+#       std::map<T,T> -- via pmap or pmap_member command
+#       std::multimap<T,T> -- via pmap or pmap_member command
+#       std::set<T> -- via pset command
+#       std::multiset<T> -- via pset command
+#       std::deque<T> -- via pdequeue command
+#       std::stack<T> -- via pstack command
+#       std::queue<T> -- via pqueue command
+#       std::priority_queue<T> -- via ppqueue command
+#       std::bitset<n> -- via pbitset command
+#       std::string -- via pstring command
+#       std::widestring -- via pwstring command
+#
+#   The end of this file contains (optional) C++ beautifiers
+#   Make sure your debugger supports $argc
+#
+#   Simple GDB Macros writen by Dan Marinescu (H-PhD) - License GPL
+#   Inspired by intial work of Tom Malnar,
+#     Tony Novac (PhD) / Cornell / Stanford,
+#     Gilad Mishne (PhD) and Many Many Others.
+#   Contact: dan_c_marinescu@yahoo.com (Subject: STL)
+#
+#   Modified to work with g++ 4.3 by Anders Elton
+#   Also added _member functions, that instead of printing the entire class in map, prints a member.
+
 
 #-------------------------------------------------------------
 #                        Android libc++
 #-------------------------------------------------------------
+
 #
 # std::list<T>
 #
@@ -65,6 +108,77 @@ document pList
 	pList 'art::Runtime::instance_'->thread_list_->list_  'art::Thread'* 0   - prints the first element in the list (if exists) and list size
 end
 
+#
+# std::vector<T>
+#
+
+define pVector
+	if $argc == 0
+		help pVector
+	else
+		set $begin = $arg0.__begin_
+		set $size = $arg0.__end_ - $begin
+		set $size_max = $size - 1
+		set $capacity = $arg0.__end_cap_.__first_ - $begin
+	end
+
+	if $argc == 1
+		set $i = 0
+		while $i < $size
+			printf "elem[%-2u]: ", $i
+			p $begin[$i]
+			set $i++
+		end
+	end
+
+	if $argc == 2
+		set $idx = $arg1
+		if $idx < 0 || $idx > $size_max
+			printf "idx is not in acceptable range: [0..%u].\n", $size_max
+		else
+			printf "elem[%u]: ", $idx
+			p $begin[$idx]
+		end
+	end
+
+	if $argc == 3
+	  set $start_idx = $arg1
+	  set $stop_idx = $arg2
+	  if $start_idx > $stop_idx
+	    set $tmp_idx = $start_idx
+	    set $start_idx = $stop_idx
+	    set $stop_idx = $tmp_idx
+	  end
+	  if $start_idx < 0 || $stop_idx < 0 || $start_idx > $size_max || $stop_idx > $size_max
+	    printf "idx1, idx2 are not in acceptable range: [0..%u].\n", $size_max
+	  else
+	    set $i = $start_idx
+		while $i <= $stop_idx
+			printf "elem[%u]: ", $i
+			p $begin[$i]
+			set $i++
+		end
+	  end
+	end
+
+	if $argc > 0
+		printf "Vector size = %u\n", $size
+		printf "Vector capacity = %u\n", $capacity
+		printf "Element "
+		whatis $begin
+	end
+end
+
+document pVector
+	Prints Android std::vector<T> information.
+	Syntax: pVector <vector> <idx1> <idx2>
+	Note: idx, idx1 and idx2 must be in acceptable range [0..<vector>.size()-1].
+	Examples:
+	pVector v - Prints vector content, size, capacity and T typedef
+	pVector v 0 - Prints element[idx] from vector
+	pVector v 1 2 - Prints elements in range [idx1..idx2] from vector
+end
+
 #-------------------------------------------------------------
 #                        Android ART
 #-------------------------------------------------------------
@@ -85,7 +199,6 @@ define pThreadList
 		#p /x $t
 		set $name = *(unsigned long *)((unsigned long)$t->tlsPtr_.name + $pointer_size * 2)
 		printf "Thread[tid = %-5d, name = %-40s]: flag = %d, state = %d\n", $t->tls32_.tid, $name, $t->tls32_.state_and_flags.as_struct.flags, $t->tls32_.state_and_flags.as_struct.state
-
 		set $current = *(unsigned long *)((unsigned long)$current + $pointer_size)
 	end
 end
@@ -94,28 +207,18 @@ end
 # boot_image_spaces_ is a std::vector data structure
 #
 define pBootImageSpaces
-	set $boot_image_spaces = &'art::Runtime::instance_'->heap_->boot_image_spaces_
-	set $begin = *(unsigned long *)$boot_image_spaces
-	set $end = *(unsigned long *)((unsigned long)$boot_image_spaces + $pointer_size)
-
-	# dump memory of std::vector<T>
-	set $pointer_size = sizeof(void *)
-	if $pointer_size == 4
-		printf "&boot_image_spaces_ = 0x%08x\n", $boot_image_spaces
-		printf "begin = 0x%08x\n", $begin
-		printf "end = 0x%08x\n", $end
-	else
-		printf "&boot_image_spaces_ = 0x%016x\n", $boot_image_spaces
-		printf "begin = 0x%016x\n", $begin
-		printf "end = 0x%016x\n", $end
-	end
+	set $boot_image_spaces = 'art::Runtime::instance_'->heap_->boot_image_spaces_
+	set $begin = $boot_image_spaces.__begin_
+	set $size = $boot_image_spaces.__end_ - $begin
 
 	# traverse the std::vector<T>
-	while $begin < $end
-		set $space = *(unsigned long *)$begin
-		#p /x *('art::gc::space::ImageSpace' *)$space
-		set $begin = (unsigned long)$begin + $pointer_size
+	set $i = 0
+	while $i < $size
+		p /x *$begin[$i]
+		set $i++
 	end
+
+	printf "std::vector<> size: %u\n", $size
 end
 
 define pRegionSpace
