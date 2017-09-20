@@ -57,15 +57,16 @@ define pList
 		set $current = $arg0.__end_.__next_
                 #p /x $head
                 #p /x $current
+		set $alloc_size = $arg0.__size_alloc_.__first_
 		set $size = 0
-                set $pointer_size = sizeof(unsigned long)
+                set $pointer_size = sizeof($current)
 
 		# dump memory of std::list<T>
                 printf "\n- dump memory of std::list<T>(%d bytes):\n", $pointer_size * 3
                 if $pointer_size == 4
 			x /3xw $head
                 else
-			x /6xw $head
+			x /3xg $head
                 end
 
 		# traverse std::list<T>
@@ -73,19 +74,17 @@ define pList
 			printf "\n- dump elements of std::list<T>:\n"
 		end
 		while $current != $head
-                        set $data = (unsigned long)$current + $pointer_size * 2
-                        #p /x $data
 			if $argc == 2
 				printf "elem[%-3u]: ", $size
-				p *($arg1*)($data)
+				p *($arg1*)($current + 1)
 			end
 			if $argc == 3
 				if $size == $arg2
 					printf "elem[%u]: ", $size
-					p *($arg1*)($data)
+					p *($arg1*)($current + 1)
 				end
 			end
-                        set $current = *(unsigned long *)((unsigned long)$current + $pointer_size)
+			set $current = $current->__next_
 			set $size++
 		end
 
@@ -122,6 +121,16 @@ define pVector
 		set $capacity = $arg0.__end_cap_.__first_ - $begin
 	end
 
+	# dump memory of std::vector<T>
+	set $pointer_size = sizeof($begin)
+	printf "\n- dump memory of std::vector<T>(%d bytes):\n", $pointer_size * 3
+	if $pointer_size == 4
+		x /3xw &$arg0
+	else
+		x /3xg &$arg0
+	end
+
+	printf "\n- dump elements of std::vector<T>:\n"
 	if $argc == 1
 		set $i = 0
 		while $i < $size
@@ -162,6 +171,7 @@ define pVector
 	end
 
 	if $argc > 0
+		printf "\n- Misc:\n"
 		printf "Vector size = %u\n", $size
 		printf "Vector capacity = %u\n", $capacity
 		printf "Element "
@@ -174,11 +184,47 @@ document pVector
 	Syntax: pVector <vector> <idx1> <idx2>
 	Note: idx, idx1 and idx2 must be in acceptable range [0..<vector>.size()-1].
 	Examples:
-	pVector v - Prints vector content, size, capacity and T typedef
-	pVector v 0 - Prints element[idx] from vector
-	pVector v 1 2 - Prints elements in range [idx1..idx2] from vector
+	pVector 'art::Runtime::instance_'->heap_->boot_image_spaces_       - Prints vector content, size, capacity and T typedef
+	pVector 'art::Runtime::instance_'->heap_->boot_image_spaces_ 0     - Prints element[0] from vector
+	pVector 'art::Runtime::instance_'->heap_->boot_image_spaces_ 0 2   - Prints elements[0] to elements[2] from vector
 end
 
+#
+# std::string
+#
+
+define pString
+	if $argc == 0
+		help pString
+	else
+		set $pointer_size = sizeof($arg0.__r_.__first_.__l.__data_)
+		printf "\n- dump memory of std::string(%d bytes):\n", $pointer_size * 3
+		if $pointer_size == 4
+			x /3xw &$arg0
+		else
+			x /3xg &$arg0
+		end
+
+		printf "\n- dump elements of std::string:\n"
+		if $arg0.__r_.__first_.__l.__size_ == 0
+			printf "Null string\n"
+		else
+
+			printf "String \t\t\t= \"%s\"\n", $arg0.__r_.__first_.__l.__data_
+		end
+
+		printf "\n- Misc:\n"
+		printf "String size/length \t= %u\n", $arg0.__r_.__first_.__l.__size_
+		printf "String capacity \t= %u\n", $arg0.__r_.__first_.__l.__cap_
+	end
+end
+
+document pString
+	Prints Android std::string information.
+	Syntax: pString <string>
+	Example:
+	pString 'art::Runtime::instance_'->boot_class_path_string_   - Prints content, size/length and capacity of string boot_class_path_string_
+end
 #-------------------------------------------------------------
 #                        Android ART
 #-------------------------------------------------------------
@@ -190,16 +236,17 @@ define pThreadList
 	set $head = &'art::Runtime::instance_'->thread_list_->list_
 	#p /x $head
 
-	set $current = 'art::Runtime::instance_'->thread_list_->list_.__end_.__next_
+	set $current = $head->__end_.__next_
 	#p /x $current
 
 	set $pointer_size = sizeof(unsigned long)
 	while $current != $head
-		set $t = ('art::Thread' *)(*(unsigned long *)((unsigned long)$current + $pointer_size * 2))
+		set $t = *('art::Thread' **)($current + 1)
 		#p /x $t
-		set $name = *(unsigned long *)((unsigned long)$t->tlsPtr_.name + $pointer_size * 2)
-		printf "Thread[tid = %-5d, name = %-40s]: flag = %d, state = %d\n", $t->tls32_.tid, $name, $t->tls32_.state_and_flags.as_struct.flags, $t->tls32_.state_and_flags.as_struct.state
-		set $current = *(unsigned long *)((unsigned long)$current + $pointer_size)
+		set $name = $t->tlsPtr_.name->__r_.__first_.__l.__data_
+		printf "Thread[tid = %-5d, name = %-40s]: flag = %d, state = %d\n", $t->tls32_.tid, $name, \
+		$t->tls32_.state_and_flags.as_struct.flags, $t->tls32_.state_and_flags.as_struct.state
+		set $current = $current->__next_
 	end
 end
 
@@ -222,14 +269,22 @@ define pBootImageSpaces
 end
 
 define pRegionSpace
-	#set $num_regions_ = 'art::Runtime::instance_'->heap_->concurrent_copying_collector_->region_space_->num_regions_
-	set $num_regions_ = 256
-	set $regions_ = *(unsigned long *)&'art::Runtime::instance_'->heap_->concurrent_copying_collector_->region_space_->regions_
+	set $num_regions = 256
+	#set $regions = *(unsigned long *)&'art::Runtime::instance_'->heap_->concurrent_copying_collector_->region_space_->regions_
+	set $regions = ('art::gc::space::RegionSpace::Region' *)'art::Runtime::instance_'->heap_->concurrent_copying_collector_->region_space_->regions_.__ptr_.__first_
 	set $i = 0
 
 	while $i < $num_regions_
-		set $region = $regions_ + $i * sizeof(art::gc::space::RegionSpace::Region)
-		p *(art::gc::space::RegionSpace::Region *)$region
+		p $regions[$i]
 		set $i++
 	end
+end
+
+document pRegionSpace
+	Prints Android std::list<T> information.
+	Syntax: pList <list> <T> <idx>: Prints list size, if T defined all elements or just element at idx
+	Examples:
+	pRegionSpace                     - prints all regions
+	pRegionSpace  idx                - prints the specified regions[idx]
+	pRegionSpace  begin end          - prints the specified regions[begin] to regions[end]
 end
