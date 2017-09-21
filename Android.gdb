@@ -57,7 +57,7 @@ define pList
 		set $current = $arg0.__end_.__next_
                 #p /x $head
                 #p /x $current
-		set $alloc_size = $arg0.__size_alloc_.__first_
+		#set $alloc_size = $arg0.__size_alloc_.__first_
 		set $size = 0
                 set $pointer_size = sizeof($current)
 
@@ -82,6 +82,7 @@ define pList
 				if $size == $arg2
 					printf "elem[%u]: ", $size
 					p *($arg1*)($current + 1)
+					loop_break
 				end
 			end
 			set $current = $current->__next_
@@ -119,18 +120,20 @@ define pVector
 		set $size = $arg0.__end_ - $begin
 		set $size_max = $size - 1
 		set $capacity = $arg0.__end_cap_.__first_ - $begin
+		set $pointer_size = sizeof($begin)
+
+		# dump memory of std::vector<T>
+		printf "\n- dump memory of std::vector<T>(%d bytes):\n", $pointer_size * 3
+		if $pointer_size == 4
+			x /3xw &$arg0
+		else
+			x /3xg &$arg0
+		end
+
+		# traverse std::vector<T>
+		printf "\n- dump elements of std::vector<T>:\n"
 	end
 
-	# dump memory of std::vector<T>
-	set $pointer_size = sizeof($begin)
-	printf "\n- dump memory of std::vector<T>(%d bytes):\n", $pointer_size * 3
-	if $pointer_size == 4
-		x /3xw &$arg0
-	else
-		x /3xg &$arg0
-	end
-
-	printf "\n- dump elements of std::vector<T>:\n"
 	if $argc == 1
 		set $i = 0
 		while $i < $size
@@ -151,23 +154,23 @@ define pVector
 	end
 
 	if $argc == 3
-	  set $start_idx = $arg1
-	  set $stop_idx = $arg2
-	  if $start_idx > $stop_idx
-	    set $tmp_idx = $start_idx
-	    set $start_idx = $stop_idx
-	    set $stop_idx = $tmp_idx
-	  end
-	  if $start_idx < 0 || $stop_idx < 0 || $start_idx > $size_max || $stop_idx > $size_max
-	    printf "idx1, idx2 are not in acceptable range: [0..%u].\n", $size_max
-	  else
-	    set $i = $start_idx
-		while $i <= $stop_idx
-			printf "elem[%u]: ", $i
-			p $begin[$i]
-			set $i++
+		set $start_idx = $arg1
+		set $stop_idx = $arg2
+		if $start_idx > $stop_idx
+			set $tmp_idx = $start_idx
+			set $start_idx = $stop_idx
+			set $stop_idx = $tmp_idx
 		end
-	  end
+		if $start_idx < 0 || $stop_idx < 0 || $start_idx > $size_max || $stop_idx > $size_max
+			printf "idx1, idx2 are not in acceptable range: [0..%u].\n", $size_max
+		else
+			set $i = $start_idx
+			while $i <= $stop_idx
+				printf "elem[%u]: ", $i
+				p $begin[$i]
+				set $i++
+			end
+		end
 	end
 
 	if $argc > 0
@@ -186,7 +189,7 @@ document pVector
 	Examples:
 	pVector 'art::Runtime::instance_'->heap_->boot_image_spaces_       - Prints vector content, size, capacity and T typedef
 	pVector 'art::Runtime::instance_'->heap_->boot_image_spaces_ 0     - Prints element[0] from vector
-	pVector 'art::Runtime::instance_'->heap_->boot_image_spaces_ 0 2   - Prints elements[0] to elements[2] from vector
+	pVector 'art::Runtime::instance_'->heap_->boot_image_spaces_ 0 2   - Prints element[0] to element[2] from vector
 end
 
 #
@@ -230,7 +233,7 @@ end
 #-------------------------------------------------------------
 
 #
-# Print thread list inforamtiion, such as tid, name and so on.
+# list_ is a std::list data structure.
 #
 define pThreadList
 	set $head = &'art::Runtime::instance_'->thread_list_->list_
@@ -251,7 +254,7 @@ define pThreadList
 end
 
 #
-# boot_image_spaces_ is a std::vector data structure
+# boot_image_spaces_ is a std::vector data structure.
 #
 define pBootImageSpaces
 	set $boot_image_spaces = 'art::Runtime::instance_'->heap_->boot_image_spaces_
@@ -268,23 +271,56 @@ define pBootImageSpaces
 	printf "std::vector<> size: %u\n", $size
 end
 
+#
+# regions_ is a std::unique_ptr<Region[]> data structure(From Android 8.0).
+#
 define pRegionSpace
-	set $num_regions = 256
-	#set $regions = *(unsigned long *)&'art::Runtime::instance_'->heap_->concurrent_copying_collector_->region_space_->regions_
+	set $size = 256
+	set $size_max = $size - 1
 	set $regions = ('art::gc::space::RegionSpace::Region' *)'art::Runtime::instance_'->heap_->concurrent_copying_collector_->region_space_->regions_.__ptr_.__first_
-	set $i = 0
 
-	while $i < $num_regions_
-		p $regions[$i]
-		set $i++
+	if $argc == 0
+		set $i = 0
+		while $i < $size
+			p $regions[$i]
+			set $i++
+		end
+	end
+
+	if $argc == 1
+		set $idx = $arg0
+		if $idx < 0 || $idx > $size_max
+			printf "idx is not in acceptable range: [0..%u].\n", $size_max
+		else
+			p $regions[$idx]
+		end
+	end
+
+	if $argc == 2
+		set $start_idx = $arg0
+		set $stop_idx = $arg1
+		if $start_idx > $stop_idx
+			set $tmp_idx = $start_idx
+			set $start_idx = $stop_idx
+			set $stop_idx = $tmp_idx
+		end
+		if $start_idx < 0 || $stop_idx < 0 || $start_idx > $size_max || $stop_idx > $size_max
+			printf "idx1, idx2 are not in acceptable range: [0..%u].\n", $size_max
+		else
+			set $i = $start_idx
+			while $i <= $stop_idx
+				p $regions[$i]
+				set $i++
+			end
+		end
 	end
 end
 
 document pRegionSpace
-	Prints Android std::list<T> information.
-	Syntax: pList <list> <T> <idx>: Prints list size, if T defined all elements or just element at idx
+	Prints Android ART region_space_->regions_ information.
+	Syntax: pRegionSpace <idx>
 	Examples:
-	pRegionSpace                     - prints all regions
-	pRegionSpace  idx                - prints the specified regions[idx]
-	pRegionSpace  begin end          - prints the specified regions[begin] to regions[end]
+	pRegionSpace                    - prints all regions
+	pRegionSpace idx                - prints the specified regions[idx]
+	pRegionSpace begin end          - prints the specified regions[begin] to regions[end]
 end
