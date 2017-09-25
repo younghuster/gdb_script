@@ -324,3 +324,28 @@ document pRegionSpace
 	pRegionSpace idx                - prints the specified regions[idx]
 	pRegionSpace begin end          - prints the specified regions[begin] to regions[end]
 end
+
+define pArray
+	set $array = ('art::mirror::Array' *)$arg0
+	set $ref = $array->klass_.reference_
+	set $mon = $array->monitor_
+	set $len = $array->length_
+
+	printf "reference_ = 0x%08x\n", $ref
+	printf "monitor_ = 0x%08x\n", $mon
+	printf "length = %d\n", $len
+
+	set $i = 0
+	while $i < $len
+		printf "ele[%-2d] = 0x%08x\n", $i, $array->first_element_[$i]
+		set $i++
+	end
+end
+
+
+document pArray
+	Prints Android art::mirror::Array information.
+	Syntax: pArray <array>   array is the address of art::mirror::Array
+	Examples:
+	pArray 0x6fb96850    - prints all information about art::mirror::Array at 0x6fb96850
+end
