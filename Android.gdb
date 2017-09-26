@@ -325,6 +325,9 @@ document pRegionSpace
 	pRegionSpace begin end          - prints the specified regions[begin] to regions[end]
 end
 
+#
+# Print art::mirror::Array data structure.
+#
 define pArray
 	set $array = ('art::mirror::Array' *)$arg0
 	set $ref = $array->klass_.reference_
@@ -348,4 +351,13 @@ document pArray
 	Syntax: pArray <array>   array is the address of art::mirror::Array
 	Examples:
 	pArray 0x6fb96850    - prints all information about art::mirror::Array at 0x6fb96850
+end
+
+
+#
+# java_vm_ is a JavaVMExt* data structure in art::Runtime.
+#
+define pJavaVMExt
+	set $java_vm = ('art::JavaVMExt' *)('art::Runtime::instance_'->java_vm_.__ptr_.__first_)
+	p /x *$java_vm
 end
