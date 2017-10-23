@@ -326,9 +326,24 @@ document pRegionSpace
 end
 
 #
+# Print art::ArtMethod data structure.
+#
+define pArtMethod
+	set $method = ('art::ArtMethod' *)$arg0
+	p /x *$method
+end
+
+document pArtMethod
+	Prints Android art::ArtMethod information.
+	Syntax: pArtMethod <method>   method is the address of art::ArtMethod object
+	Examples:
+	pArtMethod 0x6fbad488    - prints all information about art::ArtMethod at 0x6fbad488
+end
+
+#
 # Print art::mirror::Array data structure.
 #
-define pArray
+define pMirrorArray
 	set $array = ('art::mirror::Array' *)$arg0
 	set $ref = $array->klass_.reference_
 	set $mon = $array->monitor_
@@ -346,13 +361,44 @@ define pArray
 end
 
 
-document pArray
+document pMirrorArray
 	Prints Android art::mirror::Array information.
-	Syntax: pArray <array>   array is the address of art::mirror::Array
+	Syntax: pMirrorArray <array>   array is the address of art::mirror::Array object
 	Examples:
-	pArray 0x6fb96850    - prints all information about art::mirror::Array at 0x6fb96850
+	pMirrorArray 0x6fb96850    - prints all information about art::mirror::Array at 0x6fb96850
 end
 
+#
+# Print art::mirror::Class data structure.
+#
+define pMirrorClass
+	set $class = ('art::mirror::Class' *)$arg0
+	p /x *$class
+end
+
+document pMirrorClass
+	Prints Android art::mirror::Class information.
+	Syntax: pMirrorClass <class>   class is the address of art::mirror::Class object
+	Examples:
+	pMirrorClass 0x6f97c2a8    - prints all information about art::mirror::Class at 0x6f97c2a8
+end
+
+#
+# Print art::mirror::String data structure.
+#
+define pMirrorString
+	set $string = ('art::mirror::String' *)$arg0
+	p /x *$string
+	printf "String name is following:\n"
+	x/1sh $string->value_
+end
+
+document pMirrorString
+	Prints Android art::mirror::String information.
+	Syntax: pMirrorString <string>   string is the address of art::mirror::String object
+	Examples:
+	pMirrorString 0x6f62b940    - prints all information about art::mirror::String at 0x6f62b940
+end
 
 #
 # java_vm_ is a JavaVMExt* data structure in art::Runtime.
