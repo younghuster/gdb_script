@@ -242,9 +242,11 @@ define pThreadList
 	set $current = $head->__end_.__next_
 	#p /x $current
 
-	set $pointer_size = sizeof(unsigned long)
+	set $pointer_size = sizeof($current)
 	while $current != $head
-		set $t = *('art::Thread' **)($current + 1)
+		# To be compatiable with Android 6.0/7.0/8.0, sizeof(*$current) = 12 on 32bit Android 6.0 device.
+		#set $t = *('art::Thread' **)($current + 1)
+		set $t = *('art::Thread' **)((unsigned long)$current + 2 * $pointer_size)
 		#p /x $t
 		set $name = $t->tlsPtr_.name->__r_.__first_.__l.__data_
 		printf "Thread[tid = %-5d, name = %-40s]: flag = %d, state = %d\n", $t->tls32_.tid, $name, \
