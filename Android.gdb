@@ -56,7 +56,6 @@ define pList
 		set $head = &$arg0
 		set $current = $arg0.__end_.__next_
                 #p /x $head
-                #p /x $current
 		#set $alloc_size = $arg0.__size_alloc_.__first_
 		set $size = 0
                 set $pointer_size = sizeof($current)
@@ -74,14 +73,15 @@ define pList
 			printf "\n- dump elements of std::list<T>:\n"
 		end
 		while $current != $head
+			#p /x $current
 			if $argc == 2
 				printf "elem[%-3u]: ", $size
-				p *($arg1*)($current + 1)
+				p *($arg1*)((unsigned long)$current + $pointer_size * 2)
 			end
 			if $argc == 3
 				if $size == $arg2
 					printf "elem[%u]: ", $size
-					p *($arg1*)($current + 1)
+					p *($arg1*)((unsigned long)$current + $pointer_size * 2)
 					loop_break
 				end
 			end
@@ -233,6 +233,14 @@ end
 #-------------------------------------------------------------
 
 #
+# java_vm_ is a JavaVMExt* data structure in art::Runtime.
+#
+define pJavaVMExt
+	set $java_vm = ('art::JavaVMExt' *)('art::Runtime::instance_'->java_vm_.__ptr_.__first_)
+	p /x *$java_vm
+end
+
+#
 # list_ is a std::list data structure.
 #
 define pThreadList
@@ -244,9 +252,7 @@ define pThreadList
 
 	set $pointer_size = sizeof($current)
 	while $current != $head
-		# To be compatiable with Android 6.0/7.0/8.0, sizeof(*$current) = 12 on 32bit Android 6.0 device.
-		#set $t = *('art::Thread' **)($current + 1)
-		set $t = *('art::Thread' **)((unsigned long)$current + 2 * $pointer_size)
+		set $t = *('art::Thread' **)((unsigned long)$current + $pointer_size * 2)
 		#p /x $t
 		set $name = $t->tlsPtr_.name->__r_.__first_.__l.__data_
 		printf "Thread[tid = %-5d, name = %-40s]: flag = %d, state = %d\n", $t->tls32_.tid, $name, \
@@ -328,6 +334,45 @@ document pRegionSpace
 end
 
 #
+# Print art::Runtime::instance_->class_linker_->dex_caches_ data structure.
+#
+define pDexCaches
+	set $head = &'art::Runtime::instance_'->class_linker_->dex_caches_
+
+	set $current = $head->__end_.__next_
+
+	set $pointer_size = sizeof($current)
+	set $i = 0
+	while $current != $head
+		set $dex = (('art::ClassLinker::DexCacheData' *)((unsigned long)$current + $pointer_size * 2))->dex_file
+		printf "DexFile location[%-2u] = \"%s\"\n", $i++, $dex->location_.__r_.__first_.__l.__data_
+		set $current = $current->__next_
+	end
+end
+
+document pDexCaches
+	Prints Android art::Runtime::instance_->class_linker_->dex_caches_ information.
+	Syntax: pDexCaches
+	Examples:
+	pDexCaches
+end
+#
+# Print art::DexFile data structure.
+#
+define pDexFile
+	set $dex = ('art::DexFile' *)$arg0
+	p /x *$dex
+	printf "\nDexFile location = \"%s\"\n", $dex->location_.__r_.__first_.__l.__data_
+end
+
+document pDexFile
+	Prints Android art::DexFile information.
+	Syntax: pDexFile <dex>   dex is the address of art::DexFile object
+	Examples:
+	pDexFile 0xad0d5040    - prints all information about art::DexFile at 0xad0d5040
+end
+
+#
 # Print art::ArtMethod data structure.
 #
 define pArtMethod
@@ -402,10 +447,3 @@ document pMirrorString
 	pMirrorString 0x6f62b940    - prints all information about art::mirror::String at 0x6f62b940
 end
 
-#
-# java_vm_ is a JavaVMExt* data structure in art::Runtime.
-#
-define pJavaVMExt
-	set $java_vm = ('art::JavaVMExt' *)('art::Runtime::instance_'->java_vm_.__ptr_.__first_)
-	p /x *$java_vm
-end
