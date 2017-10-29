@@ -228,16 +228,46 @@ document pString
 	Example:
 	pString 'art::Runtime::instance_'->boot_class_path_string_   - Prints content, size/length and capacity of string boot_class_path_string_
 end
+
 #-------------------------------------------------------------
 #                        Android ART
 #-------------------------------------------------------------
+
+define GetAndroidOS
+	set $image=('art::gc::space::ImageSpace' *)('art::Runtime::instance_'->heap_->boot_image_spaces_.__begin_[0])
+	set $begin=(unsigned char *)$image->begin_
+	# version[4] = {'0', '2', '9', 0}
+	set $image_version = ($begin[4] - '0') * 100 + ($begin[5] - '0') * 10 + ($begin[6] - '0')
+	#p /d $image_version
+
+	set $Android_OS = 'K'
+	# Android 7.0/7.1
+	if ($image_version == 29) || ($image_version == 30)
+		set $Android_OS = 'N'
+	end
+
+	# Android 8.0/8.1
+	if ($image_version == 43) || ($image_version == 46)
+		set $Android_OS = 'O'
+	end
+
+	#p /c $Android_OS
+end
 
 #
 # java_vm_ is a JavaVMExt* data structure in art::Runtime.
 #
 define pJavaVMExt
-	set $java_vm = ('art::JavaVMExt' *)('art::Runtime::instance_'->java_vm_.__ptr_.__first_)
-	p /x *$java_vm
+	# Android N: JavaVMExt* java_vm_;
+	# Android O: std::unique_ptr<JavaVMExt> java_vm_
+	GetAndroidOS
+	if $Android_OS == 'N'
+		p /x *'art::Runtime::instance_'->java_vm_
+	end
+
+	if $Android_OS == 'O'
+		p /x *('art::JavaVMExt' *)('art::Runtime::instance_'->java_vm_.__ptr_.__first_)
+	end
 end
 
 #
@@ -421,6 +451,18 @@ end
 define pMirrorClass
 	set $class = ('art::mirror::Class' *)$arg0
 	p /x *$class
+	printf "Class name is following:\n"
+
+	GetAndroidOS
+	# For Android 7.0/7.1, uncompressed
+	if $Android_OS == 'N'
+		x/1sh (('art::mirror::String' *)$class->name_.reference_).value_
+	end
+
+	# For Android 8.0/8.1, compressed
+	if $Android_OS == 'O'
+		x/1sb (('art::mirror::String' *)$class->name_.reference_).value_
+	end
 end
 
 document pMirrorClass
@@ -437,7 +479,17 @@ define pMirrorString
 	set $string = ('art::mirror::String' *)$arg0
 	p /x *$string
 	printf "String name is following:\n"
-	x/1sh $string->value_
+	GetAndroidOS
+
+	# For Android 7.0/7.1, uncompressed
+	if $Android_OS == 'N'
+		x/1sh (('art::mirror::String' *)$class->name_.reference_).value_
+	end
+
+	# For Android 8.0/8.1, compressed
+	if $Android_OS == 'O'
+		x/1sb (('art::mirror::String' *)$class->name_.reference_).value_
+	end
 end
 
 document pMirrorString
@@ -447,3 +499,47 @@ document pMirrorString
 	pMirrorString 0x6f62b940    - prints all information about art::mirror::String at 0x6f62b940
 end
 
+define pIRT
+	set $kind = $arg0 & 0x03
+
+	GetAndroidOS
+	if $Android_OS == 'N'
+		set $jvm = 'art::Runtime::instance_'->java_vm_
+		set $serial = ($arg0 >> 20) & 0x03
+		set $idx = ($arg0 >> 2) & 0xffff
+	end
+
+	if $Android_OS == 'O'
+		set $jvm = ('art::JavaVMExt' *)('art::Runtime::instance_'->java_vm_.__ptr_.__first_)
+		set $serial = ($arg0 >> 2) & 0x03
+		set $idx = $arg0 >> 4
+	end
+
+	# Local
+	if $kind == 0x01
+		printf "Not implemented\n"
+	end
+
+	# Global
+	if $kind == 0x02
+		set $table = $jvm->globals_.table_
+		printf "The object for indirect reference(0x%x) is following:\n", $arg0
+		p /x $table[$idx].references_[$serial].root_.reference_
+	end
+
+	# Weak Global
+	if $kind == 0x03
+		set $table = $jvm->weak_globals_.table_
+		printf "The object for indirect reference(0x%x) is following:\n", $arg0
+		p /x $table[$idx].references_[$serial].root_.reference_
+	end
+end
+
+document pIRT
+	Prints Android art::IndirectReferenceTable information.
+	Syntax: pIRT <indirect_reference>   indirect_reference is the indirect reference of object.
+	Examples:
+	(gdb) p 'art::Runtime::instance_'->system_class_loader_
+	$226 = (_jobject *) 0x1001ae
+	pIRT 0x1001ae               - prints the object for 0x1001ae
+end
