@@ -500,38 +500,104 @@ document pMirrorString
 end
 
 define pIRT
-	set $kind = $arg0 & 0x03
-
 	GetAndroidOS
 	if $Android_OS == 'N'
 		set $jvm = 'art::Runtime::instance_'->java_vm_
-		set $serial = ($arg0 >> 20) & 0x03
-		set $idx = ($arg0 >> 2) & 0xffff
 	end
-
 	if $Android_OS == 'O'
 		set $jvm = ('art::JavaVMExt' *)('art::Runtime::instance_'->java_vm_.__ptr_.__first_)
-		set $serial = ($arg0 >> 2) & 0x03
-		set $idx = $arg0 >> 4
+	end
+
+	# Global/Weak Global/Local
+	if $argc == 0
+		# Global
+		printf "Global indirect reference table is following:\n"
+		p /x $jvm->globals_
+
+		# Weak Global
+		printf "\nWeak Global indirect reference table is following:\n"
+		p /x $jvm->weak_globals_
+
+		# Local
+		printf "\nLocal indirect reference table is following:\n"
+		set $head = &'art::Runtime::instance_'->thread_list_->list_
+		set $current = $head->__end_.__next_
+		set $pointer_size = sizeof($current)
+		while $current != $head
+			set $t = *('art::Thread' **)((unsigned long)$current + $pointer_size * 2)
+			set $name = $t->tlsPtr_.name->__r_.__first_.__l.__data_
+			printf "\nThread[tid = %-5d, name = %-40s]:\n", $t->tls32_.tid, $name,
+			p /x $t->tlsPtr_.jni_env->locals
+			set $current = $current->__next_
+		end
+	end
+
+	# Global/Weak Global
+	if $argc == 1
+		set $kind = $arg0 & 0x03
+		# Local
+		if $kind == 0x01
+			printf "Now you are checking the global/weak global reference instead of local reference.\n"
+
+		else
+			if $Android_OS == 'N'
+				set $serial = ($arg0 >> 20) & 0x03
+				set $idx = ($arg0 >> 2) & 0xffff
+			end
+
+			if $Android_OS == 'O'
+				set $serial = ($arg0 >> 2) & 0x03
+				set $idx = $arg0 >> 4
+			end
+
+			# Global
+			if $kind == 0x02
+				set $table = $jvm->globals_.table_
+				printf "The object for indirect reference(0x%x) is following:\n", $arg0
+				p /x $table[$idx].references_[$serial].root_.reference_
+			end
+
+			# Weak Global
+			if $kind == 0x03
+				set $table = $jvm->weak_globals_.table_
+				printf "The object for indirect reference(0x%x) is following:\n", $arg0
+				p /x $table[$idx].references_[$serial].root_.reference_
+			end
+		end
 	end
 
 	# Local
-	if $kind == 0x01
-		printf "Not implemented\n"
-	end
+	if $argc == 2
+		set $kind = $arg1 & 0x03
+		if $kind != 1
+			printf "Now you are checking the local reference instead of global/weak global reference.\n"
+		else
+			if $Android_OS == 'N'
+				set $serial = ($arg1 >> 20) & 0x03
+				set $idx = ($arg1 >> 2) & 0xffff
+			end
 
-	# Global
-	if $kind == 0x02
-		set $table = $jvm->globals_.table_
-		printf "The object for indirect reference(0x%x) is following:\n", $arg0
-		p /x $table[$idx].references_[$serial].root_.reference_
-	end
+			if $Android_OS == 'O'
+				set $serial = ($arg1 >> 2) & 0x03
+				set $idx = $arg1 >> 4
+			end
 
-	# Weak Global
-	if $kind == 0x03
-		set $table = $jvm->weak_globals_.table_
-		printf "The object for indirect reference(0x%x) is following:\n", $arg0
-		p /x $table[$idx].references_[$serial].root_.reference_
+			set $head = &'art::Runtime::instance_'->thread_list_->list_
+			set $current = $head->__end_.__next_
+			set $pointer_size = sizeof($current)
+			while $current != $head
+				set $t = *('art::Thread' **)((unsigned long)$current + $pointer_size * 2)
+				if $arg0 == $t->tls32_.tid
+					set $table = $t->tlsPtr_.jni_env->locals.table_
+					set $name = $t->tlsPtr_.name->__r_.__first_.__l.__data_
+					printf "Thread[tid = %-5d, name = %-40s]\n", $t->tls32_.tid, $name
+					printf "The object for indirect reference(0x%x) is following:\n", $arg1
+					p /x $table[$idx].references_[$serial].root_.reference_
+					loop_break
+				end
+				set $current = $current->__next_
+			end
+		end
 	end
 end
 
@@ -539,7 +605,7 @@ document pIRT
 	Prints Android art::IndirectReferenceTable information.
 	Syntax: pIRT <indirect_reference>   indirect_reference is the indirect reference of object.
 	Examples:
-	(gdb) p 'art::Runtime::instance_'->system_class_loader_
-	$226 = (_jobject *) 0x1001ae
-	pIRT 0x1001ae               - prints the object for 0x1001ae
+	(gdb) pIRT                              - Print Global/Weak Global/Local IRT information
+	(gdb) pIRT <indirect reference>         - Print Global/Weak Global IRT information
+	(gdb) pIRT <tid> <indirect reference>   - Print Local IRT information
 end
