@@ -377,15 +377,32 @@ end
 #
 define pDexCaches
 	set $head = &'art::Runtime::instance_'->class_linker_->dex_caches_
+	set $idx = 0
 
-	set $current = $head->__end_.__next_
+	getAndroidOS
 
-	set $pointer_size = sizeof($current)
-	set $i = 0
-	while $current != $head
-		set $dex = (('art::ClassLinker::DexCacheData' *)((unsigned long)$current + $pointer_size * 2))->dex_file
-		printf "DexFile location[%-2u] = \"%s\"\n", $i++, $dex->location_.__r_.__first_.__l.__data_
-		set $current = $current->__next_
+	# For Android 5.0/5.1/6.0, std::vector<GcRoot<mirror::DexCache>> dex_caches_
+	if ($Android_OS == 'L') || ($Android_OS == 'M')
+		set $begin = $head->__begin_
+		set $size = $head->__end_ - $begin
+
+		while $idx < $size
+			set $dex_cache = ('art::mirror::DexCache' *)$begin[$idx].root_.reference_
+			printf "DexFile location[%-2u] = ", $idx++
+			pMirrorString $dex_cache->location_.reference_
+		end
+	end
+
+	# For Android 7.0/7.1/8.0, std::list<DexCacheData> dex_caches_
+	if ($Android_OS == 'N') || ($Android_OS == 'O')
+		set $current = $head->__end_.__next_
+
+		set $pointer_size = sizeof($current)
+		while $current != $head
+			set $dex = (('art::ClassLinker::DexCacheData' *)((unsigned long)$current + $pointer_size * 2))->dex_file
+			printf "DexFile location[%-2u] = %s\n", $idx++, $dex->location_.__r_.__first_.__l.__data_
+			set $current = $current->__next_
+		end
 	end
 end
 
