@@ -233,14 +233,22 @@ end
 #                        Android ART
 #-------------------------------------------------------------
 
-define GetAndroidOS
-	set $image=('art::gc::space::ImageSpace' *)('art::Runtime::instance_'->heap_->boot_image_spaces_.__begin_[0])
-	set $begin=(unsigned char *)$image->begin_
-	# version[4] = {'0', '2', '9', 0}
-	set $image_version = ($begin[4] - '0') * 100 + ($begin[5] - '0') * 10 + ($begin[6] - '0')
-	#p /d $image_version
+define getAndroidOS
+	set $p = (unsigned char *)'art::ImageHeader::kImageVersion'
+	set $image_version = ($p[0] - '0') * 100 + ($p[1] - '0') * 10 + ($p[2] - '0')
 
 	set $Android_OS = 'K'
+
+	# Android 5.0/5.1
+	if ($image_version == 9) || ($image_version == 12)
+		set $Android_OS = 'L'
+	end
+
+	# Android 6.0
+	if $image_version == 17
+		set $Android_OS = 'M'
+	end
+
 	# Android 7.0/7.1
 	if ($image_version == 29) || ($image_version == 30)
 		set $Android_OS = 'N'
@@ -258,13 +266,14 @@ end
 # java_vm_ is a JavaVMExt* data structure in art::Runtime.
 #
 define pJavaVMExt
-	# Android N: JavaVMExt* java_vm_;
-	# Android O: std::unique_ptr<JavaVMExt> java_vm_
-	GetAndroidOS
-	if $Android_OS == 'N'
+	getAndroidOS
+
+	# Android L/M/N: JavaVMExt* java_vm_;
+	if ($Android_OS == 'L') ||($Android_OS == 'M') || ($Android_OS == 'N')
 		p /x *'art::Runtime::instance_'->java_vm_
 	end
 
+	# Android O: std::unique_ptr<JavaVMExt> java_vm_
 	if $Android_OS == 'O'
 		p /x *('art::JavaVMExt' *)('art::Runtime::instance_'->java_vm_.__ptr_.__first_)
 	end
@@ -453,9 +462,15 @@ define pMirrorClass
 	p /x *$class
 	printf "Class name is following:\n"
 
-	GetAndroidOS
-	# For Android 7.0/7.1, uncompressed
-	if $Android_OS == 'N'
+	getAndroidOS
+
+	# For Android 5.0/5.1, HeapReference<CharArray> array_;
+	if $Android_OS == 'L'
+		printf "Not implemented"
+	end
+
+	# For Android 6.0/7.0/7.1, uncompressed
+	if ($Android_OS == 'M') || ($Android_OS == 'N')
 		x/1sh (('art::mirror::String' *)$class->name_.reference_).value_
 	end
 
@@ -479,10 +494,16 @@ define pMirrorString
 	set $string = ('art::mirror::String' *)$arg0
 	p /x *$string
 	printf "String name is following:\n"
-	GetAndroidOS
+	getAndroidOS
 
-	# For Android 7.0/7.1, uncompressed
-	if $Android_OS == 'N'
+	# For Android 5.0/5.1, HeapReference<CharArray> array_;
+	if $Android_OS == 'L'
+		printf "Not implemented"
+		exit
+	end
+
+	# For Android 6.0/7.0/7.1, uncompressed
+	if ($Android_OS == 'M') || ($Android_OS == 'N')
 		x/1sh (('art::mirror::String' *)$class->name_.reference_).value_
 	end
 
@@ -500,10 +521,17 @@ document pMirrorString
 end
 
 define pIRT
-	GetAndroidOS
-	if $Android_OS == 'N'
+	getAndroidOS
+
+	if ($Android_OS == 'L')
+		printf "Not implemented"
+		exit
+	end
+
+	if ($Android_OS == 'M') || ($Android_OS == 'N')
 		set $jvm = 'art::Runtime::instance_'->java_vm_
 	end
+
 	if $Android_OS == 'O'
 		set $jvm = ('art::JavaVMExt' *)('art::Runtime::instance_'->java_vm_.__ptr_.__first_)
 	end
