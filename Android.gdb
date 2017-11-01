@@ -417,6 +417,26 @@ end
 define pArtMethod
 	set $method = ('art::ArtMethod' *)$arg0
 	p /x *$method
+
+	printf "\nArtMethod information is following:\n"
+
+	set $declaring_class = ('art::mirror::Class' *)$method->declaring_class_.root_.reference_
+	set $dex_cache = ('art::mirror::DexCache' *)$declaring_class->dex_cache_.reference_
+	set $dex_file = ('art::DexFile' *)$dex_cache->dex_file_
+	printf "[dex file location]: %s\n", $dex_file->location_.__r_.__first_.__l.__data_
+
+	printf "[class name]: "
+	pMirrorString $declaring_class->name_.reference_
+
+	set $dex_method_idx = $method->dex_method_index_
+	printf "[dex method idx]: %d\n", $dex_method_idx
+
+	#set $method_id = $dex_file->method_ids_[$dex_method_idx]
+	#set $type_id = $dex_file->type_ids_[$method_id.class_idx_]
+	#set $idx = $type_id.descriptor_idx_
+	#set $string_id = $dex_file->string_ids_[idx]
+	#set $ptr = $dex_file->begin_ + $string_id.string_data_off_
+	#x/1sb $ptr
 end
 
 document pArtMethod
@@ -559,7 +579,7 @@ define pIRT
 		while $current != $head
 			set $t = *('art::Thread' **)((unsigned long)$current + $pointer_size * 2)
 			set $name = $t->tlsPtr_.name->__r_.__first_.__l.__data_
-			printf "\nThread[tid = %-5d, name = %-40s]:\n", $t->tls32_.tid, $name,
+			printf "\nThread[tid = %-5d, name = %s]:\n", $t->tls32_.tid, $name,
 			p /x $t->tlsPtr_.jni_env->locals
 			set $current = $current->__next_
 		end
@@ -623,7 +643,7 @@ define pIRT
 				if $arg0 == $t->tls32_.tid
 					set $table = $t->tlsPtr_.jni_env->locals.table_
 					set $name = $t->tlsPtr_.name->__r_.__first_.__l.__data_
-					printf "Thread[tid = %-5d, name = %-40s]\n", $t->tls32_.tid, $name
+					printf "Thread[tid = %-5d, name = %s]\n", $t->tls32_.tid, $name
 					printf "The object for indirect reference(0x%x) is following:\n", $arg1
 					p /x $table[$idx].references_[$serial].root_.reference_
 					loop_break
