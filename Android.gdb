@@ -460,24 +460,9 @@ end
 define pMirrorClass
 	set $class = ('art::mirror::Class' *)$arg0
 	p /x *$class
-	printf "Class name is following:\n"
 
-	getAndroidOS
-
-	# For Android 5.0/5.1, HeapReference<CharArray> array_;
-	if $Android_OS == 'L'
-		printf "Not implemented"
-	end
-
-	# For Android 6.0/7.0/7.1, uncompressed
-	if ($Android_OS == 'M') || ($Android_OS == 'N')
-		x/1sh (('art::mirror::String' *)$class->name_.reference_).value_
-	end
-
-	# For Android 8.0/8.1, compressed
-	if $Android_OS == 'O'
-		x/1sb (('art::mirror::String' *)$class->name_.reference_).value_
-	end
+	printf "\nClass name is following:\n"
+	pMirrorString $class->name_.reference_
 end
 
 document pMirrorClass
@@ -492,8 +477,8 @@ end
 #
 define pMirrorString
 	set $string = ('art::mirror::String' *)$arg0
-	p /x *$string
-	printf "String name is following:\n"
+	set $i = 0
+
 	getAndroidOS
 
 	# For Android 5.0/5.1, HeapReference<CharArray> array_;
@@ -504,13 +489,33 @@ define pMirrorString
 
 	# For Android 6.0/7.0/7.1, uncompressed
 	if ($Android_OS == 'M') || ($Android_OS == 'N')
-		x/1sh (('art::mirror::String' *)$class->name_.reference_).value_
+		while $i < $string->count_
+			printf "%c", $string->value_[$i]
+			set $i++
+		end
 	end
 
 	# For Android 8.0/8.1, compressed
 	if $Android_OS == 'O'
-		x/1sb (('art::mirror::String' *)$class->name_.reference_).value_
+		set $count = $string->count_
+		if $count & 0x01
+			# uncompressed
+			# TODO: to be verified.
+			while $i < $count
+				printf "%c", $string->value_[$i]
+				set $i++
+			end
+		else
+			# compressed
+			set $count = $count >> 1
+			set $p = (char *)$string->value_
+			while $i < $count
+				printf "%c", $p[$i]
+				set $i++
+			end
+		end
 	end
+	printf "\n"
 end
 
 document pMirrorString
