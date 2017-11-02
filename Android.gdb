@@ -506,8 +506,10 @@ define pMirrorClass
 	pMirrorString $class->name_.reference_
 
 	set $super_class = ('art::mirror::Class' *)$class->super_class_.reference_
-	printf "[super class name]: "
-	pMirrorString $super_class->name_.reference_
+	if $super_class != 0
+		printf "[super class name]: "
+		pMirrorString $super_class->name_.reference_
+	end
 end
 
 document pMirrorClass
