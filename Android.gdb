@@ -388,7 +388,7 @@ define pDexCaches
 
 		while $idx < $size
 			set $dex_cache = ('art::mirror::DexCache' *)$begin[$idx].root_.reference_
-			printf "DexFile location[%-2u] = ", $idx++
+			printf "DexFile location[%-2u]: ", $idx++
 			pMirrorString $dex_cache->location_.reference_
 		end
 	end
@@ -400,7 +400,7 @@ define pDexCaches
 		set $pointer_size = sizeof($current)
 		while $current != $head
 			set $dex = (('art::ClassLinker::DexCacheData' *)((unsigned long)$current + $pointer_size * 2))->dex_file
-			printf "DexFile location[%-2u] = %s\n", $idx++, $dex->location_.__r_.__first_.__l.__data_
+			printf "DexFile location[%-2u]: \"%s\"\n", $idx++, $dex->location_.__r_.__first_.__l.__data_
 			set $current = $current->__next_
 		end
 	end
@@ -418,7 +418,7 @@ end
 define pDexFile
 	set $dex = ('art::DexFile' *)$arg0
 	p /x *$dex
-	printf "\nDexFile location = \"%s\"\n", $dex->location_.__r_.__first_.__l.__data_
+	printf "\n[DexFile location]: \"%s\"\n", $dex->location_.__r_.__first_.__l.__data_
 end
 
 document pDexFile
@@ -440,7 +440,7 @@ define pArtMethod
 	set $declaring_class = ('art::mirror::Class' *)$method->declaring_class_.root_.reference_
 	set $dex_cache = ('art::mirror::DexCache' *)$declaring_class->dex_cache_.reference_
 	set $dex_file = ('art::DexFile' *)$dex_cache->dex_file_
-	printf "[dex file location]: %s\n", $dex_file->location_.__r_.__first_.__l.__data_
+	printf "[dex file location]: \"%s\"\n", $dex_file->location_.__r_.__first_.__l.__data_
 
 	printf "[class name]: "
 	pMirrorString $declaring_class->name_.reference_
@@ -498,8 +498,16 @@ define pMirrorClass
 	set $class = ('art::mirror::Class' *)$arg0
 	p /x *$class
 
-	printf "\nClass name is following:\n"
+	if $class->dex_cache_.reference_ != 0
+		pMirrorDexCache $class->dex_cache_.reference_
+	end
+
+	printf "[class name]: "
 	pMirrorString $class->name_.reference_
+
+	set $super_class = ('art::mirror::Class' *)$class->super_class_.reference_
+	printf "[super class name]: "
+	pMirrorString $super_class->name_.reference_
 end
 
 document pMirrorClass
@@ -507,6 +515,23 @@ document pMirrorClass
 	Syntax: pMirrorClass <class>   class is the address of art::mirror::Class object
 	Examples:
 	pMirrorClass 0x6f97c2a8    - prints all information about art::mirror::Class at 0x6f97c2a8
+end
+
+#
+# Print art::mirror::DexCache data structure.
+#
+define pMirrorDexCache
+	set $dex_cache = ('art::mirror::DexCache' *)$arg0
+	#p /x *$dex_cache
+	printf "\n[DexFile location]: "
+	pMirrorString $dex_cache->location_.reference_
+end
+
+document pMirrorDexCache
+	Prints Android art::mirror::DexCache information.
+	Syntax: pMirrorDexCache <dex_cache>   dex_cache is the address of art::mirror::DexCache object
+	Examples:
+	pMirrorDexCache 0x6f8cafe0    - prints all information about art::mirror::DexCache at 0x6f8cafe0
 end
 
 #
@@ -524,6 +549,7 @@ define pMirrorString
 		exit
 	end
 
+	printf "\""
 	# For Android 6.0/7.0/7.1, uncompressed
 	if ($Android_OS == 'M') || ($Android_OS == 'N')
 		while $i < $string->count_
@@ -552,7 +578,7 @@ define pMirrorString
 			end
 		end
 	end
-	printf "\n"
+	printf "\"\n"
 end
 
 document pMirrorString
