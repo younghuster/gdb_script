@@ -301,6 +301,24 @@ define pThreadList
 end
 
 #
+# Print JniEntryPoints and QuickEntryPoints data structure.
+#
+define pEntryPoints
+	set $head = &'art::Runtime::instance_'->thread_list_->list_
+	set $current = $head->__end_.__next_
+	set $pointer_size = sizeof($current)
+	if $current != 0
+		set $t = *('art::Thread' **)((unsigned long)$current + $pointer_size * 2)
+
+		printf "JniEntryPoints:\n"
+		p /x $t->tlsPtr_.jni_entrypoints
+
+		printf "\nQuickEntryPoints:\n"
+		p /x $t->tlsPtr_.quick_entrypoints
+	end
+end
+
+#
 # boot_image_spaces_ is a std::vector data structure.
 #
 define pBootImageSpaces
