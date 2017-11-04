@@ -369,6 +369,35 @@ document pImageHeader
 end
 
 #
+# Print image_roots_ in the art::ImageHeader data structure.
+#
+define pImageRoots
+	if $argc == 0
+		help pImageRoots
+		exit
+	else
+		set $image_roots = ('art::mirror::Array' *)$arg0
+		printf "image_roots_: \n"
+		pMirrorArray $image_roots
+
+		set $i = 0
+		while $i < $image_roots->length_
+			printf "\nimage_roots_[%d]: \n", $i
+			pMirrorArray $image_roots->first_element_[$i]
+			set $i++
+		end
+	end
+end
+
+
+document pImageRoots
+	Prints Android image_roots_ information.
+	Syntax: pImageRoots <image_roots>   image_roots is the image roots address.
+	Examples:
+	pImageRoots 0x6fb4a000    - prints all information about image_roots_ at 0x6fb4a000
+end
+
+#
 # regions_ is a std::unique_ptr<Region[]> data structure(From Android 8.0).
 #
 define pRegionSpace
@@ -518,18 +547,11 @@ end
 #
 define pMirrorArray
 	set $array = ('art::mirror::Array' *)$arg0
-	set $ref = $array->klass_.reference_
-	set $mon = $array->monitor_
-	set $len = $array->length_
 
-	printf "reference_ = 0x%08x\n", $ref
-	printf "monitor_ = 0x%08x\n", $mon
-	printf "length = %d\n", $len
-
-	set $i = 0
-	while $i < $len
-		printf "ele[%-2d] = 0x%08x\n", $i, $array->first_element_[$i]
-		set $i++
+	set $idx = 0
+	while $idx < $array->length_
+		printf "ele[%-2d] = 0x%08x\n", $idx, $array->first_element_[$idx]
+		set $idx++
 	end
 end
 
