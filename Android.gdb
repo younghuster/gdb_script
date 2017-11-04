@@ -200,25 +200,13 @@ define pString
 	if $argc == 0
 		help pString
 	else
-		set $pointer_size = sizeof($arg0.__r_.__first_.__l.__data_)
-		printf "\n- dump memory of std::string(%d bytes):\n", $pointer_size * 3
-		if $pointer_size == 4
-			x /3xw &$arg0
-		else
-			x /3xg &$arg0
-		end
 
-		printf "\n- dump elements of std::string:\n"
 		if $arg0.__r_.__first_.__l.__size_ == 0
 			printf "Null string\n"
 		else
 
-			printf "String \t\t\t= \"%s\"\n", $arg0.__r_.__first_.__l.__data_
+			printf "\"%s\"\n", $arg0.__r_.__first_.__l.__data_
 		end
-
-		printf "\n- Misc:\n"
-		printf "String size/length \t= %u\n", $arg0.__r_.__first_.__l.__size_
-		printf "String capacity \t= %u\n", $arg0.__r_.__first_.__l.__cap_
 	end
 end
 
@@ -321,19 +309,63 @@ end
 #
 # boot_image_spaces_ is a std::vector data structure.
 #
-define pBootImageSpaces
+define pBootImageSpace
 	set $boot_image_spaces = 'art::Runtime::instance_'->heap_->boot_image_spaces_
 	set $begin = $boot_image_spaces.__begin_
 	set $size = $boot_image_spaces.__end_ - $begin
 
-	# traverse the std::vector<T>
-	set $i = 0
-	while $i < $size
-		p /x *$begin[$i]
-		set $i++
+	if $argc == 0
+		set $i = 0
+		while $i < $size
+			printf "elem[%-2u]: ", $i
+			p $begin[$i]
+			set $i++
+		end
 	end
 
-	printf "std::vector<> size: %u\n", $size
+	if $argc == 1
+		set $i = $arg0
+		if $i < 0 || $i > $size_max
+			printf "idx is not in acceptable range: [0..%u].\n", $size_max
+		else
+			printf "elem[%u]: ", $i
+			p /x *$begin[$i]
+			printf "\n[image name]: "
+			pString $begin[$i]->name_
+			printf "[image begin]: 0x%x\n", $begin[$i]->begin_
+		end
+	end
+
+end
+
+document pBootImageSpace
+	Prints Android ART boot image space information.
+	Syntax: pBootImageSpace <idx>
+	Note: idx must be in acceptable range [0..boot_image_spaces_.size() - 1].
+	Examples:
+	pBootImageSpace        - Prints all boot image space information
+	pBootImageSpace 0      - Prints the first boot image space information
+end
+
+#
+# Print the specified art::ImageHeader data structure.
+#
+define pImageHeader
+	if $argc == 0
+		help pImageHeader
+	end
+
+	if $argc == 1
+		p /x *('art::ImageHeader' *)$arg0
+	end
+end
+
+
+document pImageHeader
+	Prints Android art::ImageHeader information.
+	Syntax: pImageHeader <image_begin>   image_begin is the start address of image file.
+	Examples:
+	pImageHeader 0x6fb4a000    - prints all information about art::ImageHeader at 0x6fb4a000
 end
 
 #
