@@ -307,6 +307,13 @@ define pEntryPoints
 end
 
 #
+# boot_class_path_string_ is a std::string data structure.
+#
+define pBootClassPathString
+	pString 'art::Runtime::instance_'->boot_class_path_string_
+end
+
+#
 # boot_image_spaces_ is a std::vector data structure.
 #
 define pBootImageSpace
