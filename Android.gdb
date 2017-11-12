@@ -408,9 +408,10 @@ end
 # regions_ is a std::unique_ptr<Region[]> data structure(From Android 8.0).
 #
 define pRegionSpace
-	set $size = 256
+	set $region_space = 'art::Runtime::instance_'->heap_->concurrent_copying_collector_->region_space_
+	set $size = $region_space->num_regions_
 	set $size_max = $size - 1
-	set $regions = ('art::gc::space::RegionSpace::Region' *)'art::Runtime::instance_'->heap_->concurrent_copying_collector_->region_space_->regions_.__ptr_.__first_
+	set $regions = ('art::gc::space::RegionSpace::Region' *)$region_space->regions_.__ptr_.__first_
 
 	if $argc == 0
 		set $i = 0
