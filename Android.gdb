@@ -200,12 +200,23 @@ define pString
 	if $argc == 0
 		help pString
 	else
+		set $first_byte = *(char *)&$arg0
 
-		if $arg0.__r_.__first_.__l.__size_ == 0
-			printf "Null string\n"
+		if ($first_byte & 0x01) == 1
+			# long string
+			if $arg0.__r_.__first_.__l.__size_ == 0
+				printf "Null string\n"
+			else
+				printf "\"%s\"\n", $arg0.__r_.__first_.__l.__data_
+			end
 		else
-
-			printf "\"%s\"\n", $arg0.__r_.__first_.__l.__data_
+			# short string
+			set $size = $arg0.__r_.__first_.__s.__size_ >> 1
+			if $size == 0
+				printf "Null string\n"
+			else
+				printf "\"%s\"\n", $arg0.__r_.__first_.__s.__data_
+			end
 		end
 	end
 end
@@ -215,6 +226,7 @@ document pString
 	Syntax: pString <string>
 	Example:
 	pString 'art::Runtime::instance_'->boot_class_path_string_   - Prints content, size/length and capacity of string boot_class_path_string_
+	pString 'art::Runtime::instance_'->heap_->zygote_space_->name_
 end
 
 #-------------------------------------------------------------
