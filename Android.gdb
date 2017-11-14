@@ -200,22 +200,23 @@ define pString
 	if $argc == 0
 		help pString
 	else
-		set $first_byte = *(char *)&$arg0
+		set $str = ('std::__1::string' *)$arg0
+		set $first_byte = *(char *)$str
 
 		if ($first_byte & 0x01) == 1
 			# long string
-			if $arg0.__r_.__first_.__l.__size_ == 0
+			if $str->__r_.__first_.__l.__size_ == 0
 				printf "Null string\n"
 			else
-				printf "\"%s\"\n", $arg0.__r_.__first_.__l.__data_
+				printf "\"%s\"\n", $str->__r_.__first_.__l.__data_
 			end
 		else
 			# short string
-			set $size = $arg0.__r_.__first_.__s.__size_ >> 1
+			set $size = $str->__r_.__first_.__s.__size_ >> 1
 			if $size == 0
 				printf "Null string\n"
 			else
-				printf "\"%s\"\n", $arg0.__r_.__first_.__s.__data_
+				printf "\"%s\"\n", $str->__r_.__first_.__s.__data_
 			end
 		end
 	end
@@ -223,10 +224,11 @@ end
 
 document pString
 	Prints Android std::string information.
-	Syntax: pString <string>
+	Syntax: pString <string>  string is an address of std::string
 	Example:
-	pString 'art::Runtime::instance_'->boot_class_path_string_   - Prints content, size/length and capacity of string boot_class_path_string_
-	pString 'art::Runtime::instance_'->heap_->zygote_space_->name_
+	pString &'art::Runtime::instance_'->boot_class_path_string_     - Prints boot_class_path_string_
+	pString &'art::Runtime::instance_'->heap_->zygote_space_->name_ - Prints zygote space name
+	pString 0x74da438ed8
 end
 
 #-------------------------------------------------------------
@@ -322,7 +324,7 @@ end
 # boot_class_path_string_ is a std::string data structure.
 #
 define pBootClassPathString
-	pString 'art::Runtime::instance_'->boot_class_path_string_
+	pString &'art::Runtime::instance_'->boot_class_path_string_
 end
 
 #
@@ -350,7 +352,7 @@ define pBootImageSpace
 			printf "elem[%u]: ", $i
 			p /x *$begin[$i]
 			printf "\n[image name]: "
-			pString $begin[$i]->name_
+			pString &$begin[$i]->name_
 			printf "[image begin]: 0x%x\n", $begin[$i]->begin_
 		end
 	end
