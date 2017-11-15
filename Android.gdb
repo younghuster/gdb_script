@@ -419,6 +419,20 @@ document pImageRoots
 end
 
 #
+# large_object_space_ is a art::gc::space::LargeObjectSpace* data structure.
+#
+define pLargeObjectSpace
+	p /x *'art::Runtime::instance_'->heap_->large_object_space_
+end
+
+document pLargeObjectSpace
+	Prints ART large_object_space_ information.
+	Syntax: pLargeObjectSpace
+	Examples:
+	pLargeObjectSpace   - prints all information about heap_->large_object_space_
+end
+
+#
 # regions_ is a std::unique_ptr<Region[]> data structure(From Android 8.0).
 #
 define pRegionSpace
