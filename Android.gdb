@@ -231,6 +231,72 @@ document pString
 	pString 0x74da438ed8
 end
 
+
+define pSet
+	if $argc == 0
+		help pSet
+	else
+		set $pointer_size = sizeof(void *)
+		#set $node = ('std::__1::__tree_node_base<void*>' *)$arg0.__tree_.__begin_node_
+		set $node = *(unsigned long *)$arg0
+		#set $root = $arg0.__tree_.__pair1_.__first_.__left_
+		#set $size = $arg0.__tree_.__pair3_.__first_
+		set $size = *(unsigned long *)((unsigned long)$arg0 + $pointer_size * 2)
+		set $i = 0
+
+		if $argc == 1
+			whatis $arg0
+			printf "node = 0x%lx, root = 0x%lx, size = %lu\n", $node, $root, $size
+		end
+
+		if $argc == 2
+			while $i < $size
+				printf "elem[%u] = ", $i
+				p *($arg1 *)($node + $pointer_size * 4)
+				set $right = *(unsigned long *)($node + $pointer_size)
+				#if $node->__right_ != 0
+				if $right != 0
+					#set $node = $node->__right_
+					set $node = *(unsigned long *)($node + $pointer_size)
+					set $left = *(unsigned long *)($node)
+					#while $node->__left_ != 0
+					while $left != 0
+						#set $node = $node->__left_
+						set $node = *(unsigned long *)$node
+						set $left = *(unsigned long *)($node)
+					end
+				else
+					#set $parent = $node->__parent_
+					set $parent = *(unsigned long *)($node + $pointer_size * 2)
+					set $parent_right = *(unsigned long *)($parent + $pointer_size)
+					while $node == $parent_right
+						set $node = $parent
+						#set $parent = $parent->__parent_
+						set $parent = *(unsigned long *)($parent + $pointer_size * 2)
+					end
+
+					set $right = *(unsigned long *)($node + $pointer_size)
+					if $right != $parent
+						set $node = $parent
+					end
+				end
+
+				set $i++
+			end
+		end
+
+		if $argc == 3
+			whatis $arg0
+		end
+	end
+end
+
+document pSet
+	Prints Android std::set information.
+	Syntax: pSet <set> <T> <idx>: Prints set size, if T defined all elements or just element at idx
+	Example:
+	pSet 0x74da4d58d0 'art::gc::space::AllocationInfo'*     - Print free_blocks_
+end
 #-------------------------------------------------------------
 #                        Android ART
 #-------------------------------------------------------------
