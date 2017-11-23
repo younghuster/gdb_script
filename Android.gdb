@@ -251,8 +251,8 @@ define pSet
 
 		if $argc == 2
 			while $i < $size
-				printf "elem[%u] = ", $i
-				p *($arg1 *)($node + $pointer_size * 4)
+				printf "elem[%-2u] = ", $i
+				p  *($arg1 *)($node + $pointer_size * 4)
 				set $right = *(unsigned long *)($node + $pointer_size)
 				#if $node->__right_ != 0
 				if $right != 0
@@ -880,4 +880,13 @@ document pIRT
 	(gdb) pIRT                              - Print Global/Weak Global/Local IRT information
 	(gdb) pIRT <indirect reference>         - Print Global/Weak Global IRT information
 	(gdb) pIRT <tid> <indirect reference>   - Print Local IRT information
+end
+
+define pEnviron
+	set $i = 0
+
+	while environ[$i] != 0
+		printf "environ[%-2d] = %s\n", $i, environ[$i]
+		set $i++
+	end
 end
