@@ -358,13 +358,16 @@ define pThreadList
 	#p /x $current
 
 	set $pointer_size = sizeof($current)
+	set $i = 0
 	while $current != $head
 		set $t = *('art::Thread' **)((unsigned long)$current + $pointer_size * 2)
 		#p /x $t
 		set $name = $t->tlsPtr_.name->__r_.__first_.__l.__data_
-		printf "Thread[tid = %-5d, name = %-40s]: flag = %d, state = %d\n", $t->tls32_.tid, $name, \
-		$t->tls32_.state_and_flags.as_struct.flags, $t->tls32_.state_and_flags.as_struct.state
+		printf "Thread[%-3u] = {tid = %-5d, self = %p, flag = %d, state = %d, name = %s}\n", \
+			$i, $t->tls32_.tid, $t, $t->tls32_.state_and_flags.as_struct.flags, \
+			$t->tls32_.state_and_flags.as_struct.state, $name
 		set $current = $current->__next_
+		set $i++
 	end
 end
 
