@@ -297,6 +297,30 @@ document pSet
 	Example:
 	pSet 0x74da4d58d0 'art::gc::space::AllocationInfo'*     - Print free_blocks_
 end
+
+#-------------------------------------------------------------
+#                        Android libutils.so
+#-------------------------------------------------------------
+
+#
+# Print strong pointer
+#
+define psp
+	if $argc != 2
+		help psp
+	else
+		set $proc = *(unsigned long *)$arg0
+		p /x *($arg1 *)$proc
+	end
+end
+
+document psp
+	Prints Android sp<typename T> information.
+	Syntax: psp <sp_addr> <T>: Prints the contents at sp_addr with T* type
+	Example:
+	psp &'android::gProcess' 'android::ProcessState'
+end
+
 #-------------------------------------------------------------
 #                        Android ART
 #-------------------------------------------------------------
@@ -892,4 +916,14 @@ define pEnviron
 		printf "environ[%-2d] = %s\n", $i, environ[$i]
 		set $i++
 	end
+end
+
+
+#
+# print sp<ProcessState> gProcess.
+#
+
+define pProcessState
+	set $proc = *(unsigned long *)&'android::gProcess'
+	p /x *('android::ProcessState' *)$proc
 end
