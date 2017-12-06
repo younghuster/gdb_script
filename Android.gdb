@@ -672,6 +672,38 @@ document pArtMethod
 end
 
 #
+# Print methods[] in Class object.
+#
+define pArtMethods
+	if $argc != 1
+		exit
+	end
+
+	getAndroidOS
+
+	# This macro only supports Android N or later.
+	if $Android_OS < 'N'
+		printf "Not supported on Android %c.\n", $Android_OS
+		exit
+	end
+
+	set $len = *(unsigned long *)$arg0
+	set $methods = ('art::ArtMethod' *)($arg0 + sizeof(unsigned long))
+	set $i = 0
+	while $i < $len
+		printf "ArtMethod[%-2u] = %p\n", $i, &$methods[$i]
+		set $i++
+	end
+end
+
+document pArtMethods
+	Prints all of the art::ArtMethod[] information in class object.
+	Syntax: pArtMethods <method>   method is the value of pclass->methods_ field
+	Examples:
+	pArtMethods 0x70475e10    - prints all of the art::ArtMethod[] information at 0x70475e10.
+end
+
+#
 # Print art::mirror::Array data structure.
 #
 define pMirrorArray
