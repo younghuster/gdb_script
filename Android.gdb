@@ -431,22 +431,17 @@ define pBootImageSpace
 	if $argc == 0
 		set $i = 0
 		while $i < $size
-			printf "elem[%-2u]: ", $i
-			p $begin[$i]
+			printf "elem[%-2u] = {%p, name = %s}\n", $i, $begin[$i], $begin[$i]->name_.__r_.__first_.__l.__data_
 			set $i++
 		end
 	end
 
 	if $argc == 1
 		set $i = $arg0
-		if $i < 0 || $i > $size_max
-			printf "idx is not in acceptable range: [0..%u].\n", $size_max
+		if ($i < 0) || ($i > $size)
+			printf "idx is not in acceptable range: [0..%u].\n", $size - 1
 		else
-			printf "elem[%u]: ", $i
 			p /x *$begin[$i]
-			printf "\n[image name]: "
-			pString &$begin[$i]->name_
-			printf "[image begin]: 0x%x\n", $begin[$i]->begin_
 		end
 	end
 
