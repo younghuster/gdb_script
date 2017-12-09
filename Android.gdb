@@ -431,7 +431,9 @@ define pBootImageSpace
 	if $argc == 0
 		set $i = 0
 		while $i < $size
-			printf "elem[%-2u] = {%p, name = %s}\n", $i, $begin[$i], $begin[$i]->name_.__r_.__first_.__l.__data_
+			printf "elem[%-2u] = {ImageSpace = %p, oat_file = %p, name = %s}\n", \
+			$i, $begin[$i], $begin[$i]->oat_file_non_owned_, \
+			$begin[$i]->name_.__r_.__first_.__l.__data_
 			set $i++
 		end
 	end
@@ -460,11 +462,9 @@ end
 # Print the specified art::ImageHeader data structure.
 #
 define pImageHeader
-	if $argc == 0
+	if $argc != 1
 		help pImageHeader
-	end
-
-	if $argc == 1
+	else
 		p /x *('art::ImageHeader' *)$arg0
 	end
 end
@@ -504,6 +504,24 @@ document pImageRoots
 	Syntax: pImageRoots <image_roots>   image_roots is the image roots address.
 	Examples:
 	pImageRoots 0x6fb4a000    - prints all information about image_roots_ at 0x6fb4a000
+end
+
+#
+# Print the specified art::OatFile data structure.
+#
+define pOatFile
+	if $argc != 1
+		help pOatFile
+	else
+		p /x *('art::OatFile' *)$arg0
+	end
+end
+
+document pOatFile
+	Prints Android art::OatFile information.
+	Syntax: pOatFile <oat_file>   oat_file is the address of OatFile object.
+	Examples:
+	pOatFile 0x74da4fb2c0    - prints all information about art::OatFile at 0x74da4fb2c0
 end
 
 #
