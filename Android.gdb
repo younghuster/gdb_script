@@ -245,7 +245,6 @@ define pSet
 		set $i = 0
 
 		if $argc == 1
-			whatis $arg0
 			printf "node = 0x%lx, root = 0x%lx, size = %lu\n", $node, $root, $size
 		end
 
@@ -284,18 +283,68 @@ define pSet
 				set $i++
 			end
 		end
-
-		if $argc == 3
-			whatis $arg0
-		end
 	end
 end
 
 document pSet
 	Prints Android std::set information.
-	Syntax: pSet <set> <T> <idx>: Prints set size, if T defined all elements or just element at idx
+	Syntax: pSet <set> <T>: Prints set size, if T defined all elements
 	Example:
 	pSet 0x74da4d58d0 'art::gc::space::AllocationInfo'*     - Print free_blocks_
+end
+
+define pMap
+	if $argc == 0
+		help pMap
+	else
+		set $pointer_size = sizeof(void *)
+		set $node = *(unsigned long *)$arg0
+		set $size = *(unsigned long *)((unsigned long)$arg0 + $pointer_size * 2)
+		set $i = 0
+
+		if $argc == 1
+			printf "node = 0x%lx, root = 0x%lx, size = %lu\n", $node, $root, $size
+		end
+
+		printf "sizeof(arg1) = %d\n", sizeof($arg1)
+		if $argc == 3
+			while $i < $size
+				printf "elem[%-2u] = ", $i
+				p /x *($arg1 *)($node + $pointer_size * 4)
+				p /x *($arg2 *)($node + $pointer_size * 4 + sizeof($arg1))
+				set $right = *(unsigned long *)($node + $pointer_size)
+				if $right != 0
+					set $node = *(unsigned long *)($node + $pointer_size)
+					set $left = *(unsigned long *)($node)
+					while $left != 0
+						set $node = *(unsigned long *)$node
+						set $left = *(unsigned long *)($node)
+					end
+				else
+					set $parent = *(unsigned long *)($node + $pointer_size * 2)
+					set $parent_right = *(unsigned long *)($parent + $pointer_size)
+					while $node == $parent_right
+						set $node = $parent
+						set $parent = *(unsigned long *)($parent + $pointer_size * 2)
+					end
+
+					set $right = *(unsigned long *)($node + $pointer_size)
+					if $right != $parent
+						set $node = $parent
+					end
+				end
+
+				set $i++
+			end
+		end
+	end
+end
+
+document pMap
+	Prints Android std::Map information.
+	Syntax: pMap <set> <key_type> <value_type>: Prints set size, if T defined all elements
+	Example:
+	pMap 0x74da4cb7f0 'art::StringPiece' 'art::OatDexFile'*     - Print AllocationTrackingSafeMap information at 0x74da4cb7f0.
 end
 
 #-------------------------------------------------------------
@@ -568,6 +617,28 @@ document pVdexFile
 	Examples:
 	pVdexFile 0x74da42d148    - prints all information about art::VdexFile at 0x74da42d148
 end
+
+#
+# Print the specified art::OatDexFile data structure.
+#
+define pOatDexFile
+	if $argc != 1
+		help pOatDexFile
+	else
+		set $oat_dex_file = ('art::OatDexFile' *)$arg0
+		p /x *$oat_dex_file
+		printf "[OatDexFile location]: "
+		pString &$oat_dex_file->dex_file_location_
+	end
+end
+
+document pOatDexFile
+	Prints Android art::OatDexFile information.
+	Syntax: pOatDexFile <oat_dex_file>   oat_dex_file is the address of OatDexFile object.
+	Examples:
+	pOatDexFile 0x74da438370    - prints all information about art::OatDexFile at 0x74da438370
+end
+
 #
 # large_object_space_ is a art::gc::space::LargeObjectSpace* data structure.
 #
