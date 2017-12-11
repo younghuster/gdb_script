@@ -431,9 +431,9 @@ define pBootImageSpace
 	if $argc == 0
 		set $i = 0
 		while $i < $size
-			printf "elem[%-2u] = {ImageSpace = %p, oat_file = %p, name = %s}\n", \
+			printf "elem[%-2u] = {ImageSpace* = %p, OatFile* = %p, begin_ = %p, name = %s}\n", \
 			$i, $begin[$i], $begin[$i]->oat_file_non_owned_, \
-			$begin[$i]->name_.__r_.__first_.__l.__data_
+			$begin[$i].begin_, $begin[$i]->name_.__r_.__first_.__l.__data_
 			set $i++
 		end
 	end
@@ -456,6 +456,28 @@ document pBootImageSpace
 	Examples:
 	pBootImageSpace        - Prints all boot image space information
 	pBootImageSpace 0      - Prints the first boot image space information
+end
+
+#
+# Print the specified art::MemMap data structure.
+#
+define pMemMap
+	if $argc != 1
+		help pMemMap
+	else
+		set $mem_map = ('art::MemMap' *)$arg0
+		p /x *$mem_map
+		printf "[MemMap name]: "
+		pString &$mem_map->name_
+	end
+end
+
+
+document pMemMap
+	Prints Android art::MemMap information.
+	Syntax: pMemMap <mem_map>   mem_map is the address of art::MemMap object.
+	Examples:
+	pMemMap 0x74da4e6dd0    - prints all information about art::MemMap at 0x74da4e6dd0
 end
 
 #
@@ -513,7 +535,10 @@ define pOatFile
 	if $argc != 1
 		help pOatFile
 	else
-		p /x *('art::OatFile' *)$arg0
+		set $oat_file = ('art::OatFile' *)$arg0
+		p /x *$oat_file
+		printf "[OatFile location]: "
+		pString &$oat_file->location_
 	end
 end
 
@@ -524,6 +549,25 @@ document pOatFile
 	pOatFile 0x74da4fb2c0    - prints all information about art::OatFile at 0x74da4fb2c0
 end
 
+#
+# Print the specified art::VdexFile data structure(Android 8.x and later).
+#
+define pVdexFile
+	if $argc != 1
+		help pVdexFile
+	else
+		set $vdex_file = ('art::VdexFile' *)$arg0
+		p /x *$vdex_file
+		pMemMap $vdex_file->mmap_.__ptr_.__first_
+	end
+end
+
+document pVdexFile
+	Prints Android art::VdexFile information.
+	Syntax: pVdexFile <vdex_file>   vdex_file is the address of VdexFile object.
+	Examples:
+	pVdexFile 0x74da42d148    - prints all information about art::VdexFile at 0x74da42d148
+end
 #
 # large_object_space_ is a art::gc::space::LargeObjectSpace* data structure.
 #
