@@ -804,6 +804,7 @@ end
 #
 define pArtMethods
 	if $argc != 1
+		help pArtMethods
 		exit
 	end
 
@@ -835,12 +836,16 @@ end
 # Print art::mirror::Array data structure.
 #
 define pMirrorArray
-	set $array = ('art::mirror::Array' *)$arg0
+	if $argc != 1
+		help pMirrorArray
+	else
+		set $array = ('art::mirror::Array' *)$arg0
 
-	set $idx = 0
-	while $idx < $array->length_
-		printf "ele[%-2d] = 0x%08x\n", $idx, $array->first_element_[$idx]
-		set $idx++
+		set $idx = 0
+		while $idx < $array->length_
+			printf "ele[%-2d] = 0x%08x\n", $idx, $array->first_element_[$idx]
+			set $idx++
+		end
 	end
 end
 
@@ -884,10 +889,14 @@ end
 # Print art::mirror::DexCache data structure.
 #
 define pMirrorDexCache
-	set $dex_cache = ('art::mirror::DexCache' *)$arg0
-	#p /x *$dex_cache
-	printf "\n[DexFile location]: "
-	pMirrorString $dex_cache->location_.reference_
+	if $argc != 1
+		help pMirrorDexCache
+	else
+		set $dex_cache = ('art::mirror::DexCache' *)$arg0
+		p /x *$dex_cache
+		printf "\n[DexFile location]: "
+		pMirrorString $dex_cache->location_.reference_
+	end
 end
 
 document pMirrorDexCache
