@@ -960,6 +960,25 @@ document pMirrorString
 	pMirrorString 0x6f62b940    - prints all information about art::mirror::String at 0x6f62b940
 end
 
+#
+# Print art::mirror::ClassLoader data structure.
+#
+define pMirrorClassLoader
+	if $argc != 1
+		help pMirrorClassLoader
+	else
+		set $class_loader = ('art::mirror::ClassLoader' *)$arg0
+		p /x *$class_loader
+	end
+end
+
+document pMirrorClassLoader
+	Prints Android art::mirror::ClassLoader information.
+	Syntax: pMirrorClassLoader <class_loader>   class_loader is the address of art::mirror::ClassLoader object
+	Examples:
+	pMirrorClassLoader 0x732359f8    - prints all information about art::mirror::ClassLoader at 0x732359f8
+end
+
 define pIRT
 	getAndroidOS
 
