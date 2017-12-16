@@ -783,6 +783,38 @@ document pArtField
 end
 
 #
+# Print ArtFields[] in Class object.
+#
+define pArtFields
+	if $argc != 1
+		help pArtFields
+	else
+		getAndroidOS
+
+		# This macro only supports Android N or later.
+		if $Android_OS < 'N'
+			printf "Not supported on Android %c.\n", $Android_OS
+			exit
+		end
+
+		set $len = *(unsigned int *)$arg0
+		set $fields = ('art::ArtField' *)($arg0 + sizeof(unsigned int))
+		set $i = 0
+		while $i < $len
+			printf "ArtField[%-2u] = %p\n", $i, &$fields[$i]
+			set $i++
+		end
+	end
+end
+
+document pArtFields
+	Prints all of the art::ArtField[] information in class object.
+	Syntax: pArtFields <art_fields>   art_fields is the value of pclass->ifields_/sfields_ member
+	Examples:
+	pArtFields 0x6fc49940    - prints all of the art::ArtField[] information at 0x6fc49940.
+end
+
+#
 # Print art::ArtMethod data structure.
 #
 define pArtMethod
