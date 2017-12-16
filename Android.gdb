@@ -765,36 +765,58 @@ document pDexFile
 end
 
 #
+# Print art::ArtField data structure.
+#
+define pArtField
+	if $argc != 1
+		help pArtMethod
+	else
+		p /x *('art::ArtField'*)$arg0
+	end
+end
+
+document pArtField
+	Prints Android art::ArtField information.
+	Syntax: pArtField <art_field>   art_field is the address of art::ArtField object
+	Examples:
+	pArtField 0x6fc49944    - prints all information about art::ArtField at 0x6fc49944
+end
+
+#
 # Print art::ArtMethod data structure.
 #
 define pArtMethod
-	set $method = ('art::ArtMethod' *)$arg0
-	p /x *$method
+	if $argc != 1
+		help pArtMethod
+	else
+		set $method = ('art::ArtMethod' *)$arg0
+		p /x *$method
 
-	printf "\nArtMethod information is following:\n"
+		printf "\nArtMethod information is following:\n"
 
-	set $declaring_class = ('art::mirror::Class' *)$method->declaring_class_.root_.reference_
-	set $dex_cache = ('art::mirror::DexCache' *)$declaring_class->dex_cache_.reference_
-	set $dex_file = ('art::DexFile' *)$dex_cache->dex_file_
-	printf "[dex file location]: \"%s\"\n", $dex_file->location_.__r_.__first_.__l.__data_
+		set $declaring_class = ('art::mirror::Class' *)$method->declaring_class_.root_.reference_
+		set $dex_cache = ('art::mirror::DexCache' *)$declaring_class->dex_cache_.reference_
+		set $dex_file = ('art::DexFile' *)$dex_cache->dex_file_
+		printf "[dex file location]: \"%s\"\n", $dex_file->location_.__r_.__first_.__l.__data_
 
-	printf "[class name]: "
-	pMirrorString $declaring_class->name_.reference_
+		printf "[class name]: "
+		pMirrorString $declaring_class->name_.reference_
 
-	set $dex_method_idx = $method->dex_method_index_
-	printf "[dex method idx]: %d\n", $dex_method_idx
+		set $dex_method_idx = $method->dex_method_index_
+		printf "[dex_method_idx]: %d\n", $dex_method_idx
 
-	#set $method_id = $dex_file->method_ids_[$dex_method_idx]
-	#set $type_id = $dex_file->type_ids_[$method_id.class_idx_]
-	#set $idx = $type_id.descriptor_idx_
-	#set $string_id = $dex_file->string_ids_[idx]
-	#set $ptr = $dex_file->begin_ + $string_id.string_data_off_
-	#x/1sb $ptr
+		#set $method_id = $dex_file->method_ids_[$dex_method_idx]
+		#set $type_id = $dex_file->type_ids_[$method_id.class_idx_]
+		#set $idx = $type_id.descriptor_idx_
+		#set $string_id = $dex_file->string_ids_[idx]
+		#set $ptr = $dex_file->begin_ + $string_id.string_data_off_
+		#x/1sb $ptr
+	end
 end
 
 document pArtMethod
 	Prints Android art::ArtMethod information.
-	Syntax: pArtMethod <method>   method is the address of art::ArtMethod object
+	Syntax: pArtMethod <art_method>   art_method is the address of art::ArtMethod object
 	Examples:
 	pArtMethod 0x6fbad488    - prints all information about art::ArtMethod at 0x6fbad488
 end
@@ -865,7 +887,9 @@ define pMirrorClass
 	p /x *$class
 
 	if $class->dex_cache_.reference_ != 0
-		pMirrorDexCache $class->dex_cache_.reference_
+		set $dex_cache = ('art::mirror::DexCache' *)$class->dex_cache_.reference_
+		printf "\n[DexFile location]: "
+		pMirrorString $dex_cache->location_.reference_
 	end
 
 	printf "[class name]: "
@@ -978,6 +1002,14 @@ document pMirrorClassLoader
 	Examples:
 	pMirrorClassLoader 0x732359f8    - prints all information about art::mirror::ClassLoader at 0x732359f8
 end
+
+#
+# Print SystemClassLoader instance.
+#
+define pSystemClassLoader
+	p /x 'art::Runtime::instance_'->system_class_loader_
+end
+
 
 define pIRT
 	getAndroidOS
