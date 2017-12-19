@@ -577,6 +577,28 @@ document pImageRoots
 	pImageRoots 0x6fb4a000    - prints all information about image_roots_ at 0x6fb4a000
 end
 
+
+#
+# Print art::gc::accounting::SpaceBitmap data structure.
+#
+define pSpaceBitmap
+	if $argc != 1
+		help pSpaceBitmap
+	else
+		set $space_bitmap = ('art::gc::accounting::SpaceBitmap<8>' *)$arg0
+		p /x *$space_bitmap
+		printf "[SpaceBitmap name]: "
+		pString &$space_bitmap->name_
+	end
+end
+
+document pSpaceBitmap
+	Prints 'art::gc::accounting::SpaceBitmap<8>' information.
+	Syntax: pSpaceBitmap <space_bitmap>   space_bitmap is the address of SpaceBitmap.
+	Examples:
+	pSpaceBitmap 0x74da4f5880
+end
+
 #
 # Print the specified art::OatFile data structure.
 #
@@ -870,7 +892,8 @@ define pArtMethods
 		exit
 	end
 
-	set $len = *(unsigned long *)$arg0
+	# Length is 4 bytes. 8 bytes is just for ArtMethod alignment.
+	set $len = *(unsigned int *)$arg0
 	set $methods = ('art::ArtMethod' *)($arg0 + sizeof(unsigned long))
 	set $i = 0
 	while $i < $len
