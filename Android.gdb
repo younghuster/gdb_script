@@ -758,7 +758,7 @@ define pDexCaches
 		set $pointer_size = sizeof($current)
 		while $current != $head
 			set $dex = (('art::ClassLinker::DexCacheData' *)((unsigned long)$current + $pointer_size * 2))->dex_file
-			printf "DexFile location[%-2u]: \"%s\"\n", $idx++, $dex->location_.__r_.__first_.__l.__data_
+			printf "DexFile* = %p, location[%-2u] = \"%s\"\n", $dex, $idx++, $dex->location_.__r_.__first_.__l.__data_
 			set $current = $current->__next_
 		end
 	end
