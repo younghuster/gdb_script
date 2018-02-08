@@ -445,6 +445,24 @@ define pThreadList
 end
 
 #
+# Print art::Thread data structure.
+#
+define pThread
+	if $argc != 1
+		help pThread
+	else
+		p /x *('art::Thread' *)$arg0
+	end
+end
+
+document pThread
+	Prints Android art::Thread information.
+	Syntax: pThread <thread>   thread is the address of art::Thread object
+	Examples:
+	pThread 0x74da4bea00    - prints all information about art::Thread at 0x74da4bea00
+end
+
+#
 # Print JniEntryPoints and QuickEntryPoints data structure.
 #
 define pEntryPoints
