@@ -1211,6 +1211,54 @@ define pEnviron
 	end
 end
 
+#
+# Print art::Monitor data structure.
+#
+define pMonitor
+	if $argc != 1
+		help pMonitor
+	else
+		p /x *('art::Monitor' *)$arg0
+	end
+end
+
+document pMonitor
+	Prints Android art::Monitor information.
+	Syntax: pMonitor <monitor>   monitor is the address of art::Monitor object
+	Examples:
+	pMonitor 0x74d09fc720    - prints all information about art::Monitor at 0x74d09fc720
+end
+
+#
+# print monitor_pool_ in the VM.
+#
+define pMonitorPool
+	p /x *'art::Runtime::instance_'->monitor_pool_
+end
+
+#
+# Print monitor chunk in MonitorPool data structure.
+#
+define pMonitorChunk
+	if $argc != 1
+		help pMonitorChunk
+	else
+		set $chunk = ('art::Monitor'*)$arg0
+		set $i = 0
+		set $size = 'art::MonitorPool::kChunkCapacity'
+		while $i < $size
+			pMonitor $chunk[$i]
+			set $i++
+		end
+	end
+end
+
+document pMonitorChunk
+	Prints Android art::Monitor[] information.
+	Syntax: pMonitorChunk <monitor>   monitor is the address of art::Monitor object
+	Examples:
+	pMonitorChunk 0x74d09fc000    - prints all information about art::Monitor[] at 0x74d09fc000
+end
 
 #
 # print sp<ProcessState> gProcess.
