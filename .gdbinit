@@ -1268,3 +1268,28 @@ define pProcessState
 	set $proc = *(unsigned long *)&'android::gProcess'
 	p /x *('android::ProcessState' *)$proc
 end
+
+#-------------------------------------------------------------
+#                        Linux libc++
+#-------------------------------------------------------------
+
+#
+# std::string
+#
+
+define pstring
+        if $argc == 0 
+                help pstring
+        else
+                set $str = (std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > *)$arg0
+                printf "\"%s\"\n", $str->_M_dataplus._M_p
+        end
+end
+
+document pstring
+        Prints C++11 std::string information.
+        Syntax: pstring <string>  string is an address of std::string
+        Example:
+        (gdb) pstring 0x67ece0
+        "conv1"
+end
