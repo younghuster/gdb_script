@@ -1293,3 +1293,102 @@ document pstring
         (gdb) pstring 0x67ece0
         "conv1"
 end
+
+
+#-------------------------------------------------------------
+#                        Tensorflow + GNNE
+#-------------------------------------------------------------
+
+#
+# Shape
+#
+
+#
+# Print the specified Shape data structure.
+#
+define pShape
+	if $argc != 1
+		help pShape
+	else
+		set $shape = ('xla::Shape' *)$arg0
+		p *$shape
+	end
+end
+
+document pShape
+	Prints xla::Shape information.
+	Syntax: pShape <shape_addr>   shape_addr is the address of Shape object.
+end
+
+#
+# HloInstruction
+#
+
+#
+# Print the specified HloInstruction data structure.
+#
+define pHloInstruction
+	if $argc != 1
+		help pHloInstruction
+	else
+		set $inst = ('xla::HloInstruction' *)$arg0
+		printf "[name]: "
+		p $inst->name_
+		printf "[unique_id]: "
+		p $inst->unique_id_
+
+		p *$inst
+	end
+end
+
+document pHloInstruction
+	Prints xla::HloInstruction information.
+	Syntax: pHloInstruction <inst_addr>   inst_addr is the address of HloInstruction object.
+end
+
+#
+# GNNELloInstruction
+#
+
+#
+# Print the specified GNNELloInstruction data structure.
+#
+define pGNNELloInstruction
+	if $argc != 1
+		help pGNNELloInstruction
+	else
+		set $inst = ('xla::gnne::GNNELloInstruction' *)$arg0
+		printf "[name]: "
+		p $inst->name_
+		printf "[unique_id]: "
+		p $inst->unique_id_
+
+		p *$inst
+	end
+end
+
+document pGNNELloInstruction
+	Prints xla::gnne::GNNELloInstruction information.
+	Syntax: pGNNELloInstruction <inst_addr>   inst_addr is the address of GNNELloInstruction object.
+end
+
+#
+# buffer
+#
+
+#
+# Print the specified buffer data structure.
+#
+define pbuffer
+	if $argc != 1
+		help pbuffer
+	else
+		set $buf = ('xla::gnne::buffer' *)$arg0
+		p *$buf
+	end
+end
+
+document pbuffer
+	Prints xla::gnne::buffer information.
+	Syntax: pbuffer <buf_addr>   buf_addr is the address of buffer object.
+end
