@@ -1392,3 +1392,42 @@ document pbuffer
 	Prints xla::gnne::buffer information.
 	Syntax: pbuffer <buf_addr>   buf_addr is the address of buffer object.
 end
+
+
+#
+# Print the specified GNNELloConstantInstruction data structure.
+#
+define pGNNELloConstantInstruction
+	if $argc != 1
+		help pGNNELloConstantInstruction
+	else
+		set $inst = ('xla::gnne::GNNELloConstantInstruction' *)$arg0
+		printf "[name]: "
+		p $inst->name_
+		printf "[unique_id]: "
+		p $inst->unique_id_
+
+		p *$inst
+	end
+end
+
+document pGNNELloConstantInstruction
+	Prints xla::gnne::GNNELloConstantInstruction information.
+	Syntax: pGNNELloConstantInstruction <inst_addr>   inst_addr is the address of GNNELloConstantInstruction object.
+end
+
+#
+# Print the specified Piece data structure.
+#
+define pPiece
+	if $argc != 1
+		help pPiece
+	else
+		p *(xla::LiteralBase::Piece*)$arg0
+	end
+end
+
+document pPiece
+	Prints xla::LiteralBase::Piece information.
+	Syntax: pPiece <piece_addr>   piece_addr is the address of Piece object.
+end
