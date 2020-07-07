@@ -1431,3 +1431,47 @@ document pPiece
 	Prints xla::LiteralBase::Piece information.
 	Syntax: pPiece <piece_addr>   piece_addr is the address of Piece object.
 end
+
+#
+# Print the specified GNNELloSliceInstruction data structure.
+#
+define pGNNELloSliceInstruction
+	if $argc != 1
+		help pGNNELloSliceInstruction
+	else
+		set $inst = ('xla::gnne::GNNELloSliceInstruction' *)$arg0
+		printf "[name]: "
+		p $inst->name_
+		printf "[unique_id]: "
+		p $inst->unique_id_
+
+		p *$inst
+	end
+end
+
+document pGNNELloSliceInstruction
+	Prints xla::gnne::GNNELloSliceInstruction information.
+	Syntax: pGNNELloSliceInstruction <inst_addr>   inst_addr is the address of GNNELloSliceInstruction object.
+end
+
+#
+# Print the specified GNNELloSliceInstruction data structure.
+#
+define pGNNELloBroadcastInstruction
+	if $argc != 1
+		help pGNNELloBroadcastInstruction
+	else
+		set $inst = ('xla::gnne::GNNELloBroadcastInstruction' *)$arg0
+		printf "[name]: "
+		p $inst->name_
+		printf "[unique_id]: "
+		p $inst->unique_id_
+
+		p *$inst
+	end
+end
+
+document pGNNELloBroadcastInstruction
+	Prints xla::gnne::GNNELloBroadcastInstruction information.
+	Syntax: pGNNELloBroadcastInstruction <inst_addr>   inst_addr is the address of GNNELloBroadcastInstruction object.
+end
